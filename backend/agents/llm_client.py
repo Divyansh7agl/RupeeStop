@@ -89,9 +89,8 @@ class LLMClient:
         except Exception as e:
             logger.error("llm.groq.fallback_failed", error=str(e))
             raise RuntimeError(
-                f"Both Gemini and Groq API limits reached. "
-                f"Gemini error: {gemini_error}. Groq error: {e}. "
-                f"Please wait a few minutes and try again."
+                "Both Gemini and Groq API rate limits have been reached. "
+                "Please wait a few minutes and try again."
             )
 
     async def _gemini_complete(self, system_prompt: str, user_prompt: str, temperature: float) -> str:

@@ -218,10 +218,13 @@ export default function App() {
 
         {/* ── Error ── */}
         {error && (
-          <div className="rs-glass-card animate-slide-up" style={{ borderLeft: "4px solid var(--color-accent-red)", padding: "20px 24px", marginBottom: 40, color: "#fca5a5" }}>
-            <div style={{ fontWeight: 600, marginBottom: 4, fontFamily: "var(--font-heading)" }}>⚠ API Rate Limit Reached</div>
-            <div style={{ fontSize: 14, marginBottom: 8 }}>{error}</div>
-            <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>Both Gemini and Groq rate limits were hit. Please wait a few minutes and try again.</div>
+          <div className="rs-glass-card animate-slide-up" style={{ borderLeft: "4px solid var(--color-accent-red)", padding: "20px 24px", marginBottom: 40 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6, fontFamily: "var(--font-heading)", color: "#fca5a5", display: "flex", alignItems: "center", gap: 8 }}>
+              ⚠ Rate Limit Reached
+            </div>
+            <div style={{ fontSize: 14, color: "var(--color-text-muted)", lineHeight: 1.6 }}>
+              Both Gemini and Groq API limits are currently exhausted. Please wait a few minutes and try again.
+            </div>
           </div>
         )}
 
