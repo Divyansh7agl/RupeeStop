@@ -23,15 +23,21 @@ GROQ_MODEL = "llama-3.3-70b-versatile"
 
 class LLMClient:
     def __init__(self):
-        gemini_key = os.getenv("GEMINI_API_KEY")
+        gemini_key_str = os.getenv("GEMINI_API_KEY")
         groq_key = os.getenv("GROQ_API_KEY")
 
-        if not gemini_key:
+        if not gemini_key_str:
             raise ValueError("GEMINI_API_KEY not set in environment")
         if not groq_key:
             raise ValueError("GROQ_API_KEY not set in environment")
 
-        genai.configure(api_key=gemini_key)
+        self.gemini_keys = [k.strip() for k in gemini_key_str.split(",") if k.strip()]
+        if not self.gemini_keys:
+            raise ValueError("No valid keys found in GEMINI_API_KEY")
+            
+        self.current_key_idx = 0
+        genai.configure(api_key=self.gemini_keys[self.current_key_idx])
+
         self.gemini_client = genai.GenerativeModel(GEMINI_MODEL)
         self.gemini_fallback_client = genai.GenerativeModel(GEMINI_FALLBACK_MODEL)
         self.gemini_search_client = genai.GenerativeModel(
@@ -41,7 +47,20 @@ class LLMClient:
         self.groq_client = AsyncGroq(api_key=groq_key)
         self.fallback_warning: Optional[str] = None  # set when fallback is used
 
-        logger.info("llm_client.initialized", gemini_model=GEMINI_MODEL, gemini_fallback=GEMINI_FALLBACK_MODEL, groq_model=GROQ_MODEL)
+        logger.info("llm_client.initialized", gemini_model=GEMINI_MODEL, gemini_fallback=GEMINI_FALLBACK_MODEL, groq_model=GROQ_MODEL, keys_count=len(self.gemini_keys))
+
+    def _rotate_gemini_key(self):
+        """Rotate to the next Gemini API key and re-initialize clients."""
+        self.current_key_idx = (self.current_key_idx + 1) % len(self.gemini_keys)
+        next_key = self.gemini_keys[self.current_key_idx]
+        genai.configure(api_key=next_key)
+        self.gemini_client = genai.GenerativeModel(GEMINI_MODEL)
+        self.gemini_fallback_client = genai.GenerativeModel(GEMINI_FALLBACK_MODEL)
+        self.gemini_search_client = genai.GenerativeModel(
+            GEMINI_MODEL,
+            tools=["google_search_retrieval"]
+        )
+        logger.info("llm.gemini.rotating_key", new_idx=self.current_key_idx)
 
     async def complete(
         self,
@@ -75,6 +94,8 @@ class LLMClient:
             except Exception as e:
                 gemini_error = str(e)
                 logger.warning("llm.gemini.failed", attempt=attempt + 1, error=gemini_error)
+                if len(self.gemini_keys) > 1:
+                    self._rotate_gemini_key()
                 if attempt == max_retries - 1:
                     break
                 await asyncio.sleep(1.5 ** attempt)
@@ -135,18 +156,25 @@ class LLMClient:
     async def search_market_context(self, query: str) -> str:
         """Gemini with Google Search grounding for live market data."""
         loop = asyncio.get_event_loop()
-        try:
-            response = await loop.run_in_executor(
-                None,
-                lambda: self.gemini_search_client.generate_content(
-                    f"Provide current market context for Indian mutual fund investors: {query}. "
-                    f"Include recent performance data, market trends, and relevant economic indicators."
+        for attempt in range(2):
+            try:
+                response = await loop.run_in_executor(
+                    None,
+                    lambda: self.gemini_search_client.generate_content(
+                        f"Provide current market context for Indian mutual fund investors: {query}. "
+                        f"Include recent performance data, market trends, and relevant economic indicators."
+                    )
                 )
-            )
-            return response.text.strip()
-        except Exception as e:
-            logger.warning("llm.gemini_search.failed_falling_back", error=str(e))
-            return await self.groq_market_context(query)
+                return response.text.strip()
+            except Exception as e:
+                logger.warning("llm.gemini_search.failed", attempt=attempt+1, error=str(e))
+                if len(self.gemini_keys) > 1 and attempt == 0:
+                    self._rotate_gemini_key()
+                else:
+                    logger.warning("llm.gemini_search.falling_back", error=str(e))
+                    return await self.groq_market_context(query)
+        
+        return await self.groq_market_context(query)
 
     async def groq_market_context(self, query: str) -> str:
         """Groq fallback for market context using training knowledge."""
