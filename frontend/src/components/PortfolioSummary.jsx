@@ -102,7 +102,7 @@ export default function PortfolioSummary() {
             {[
               { label: "Age", value: `${portfolio.age} years` },
               { label: "Risk Profile", value: portfolio.risk_profile },
-              { label: "Goals", value: portfolio.goals.join(", ") },
+              { label: "Goals", value: portfolio.goals.map(g => g.replace(/_/g, " ")).join(", ") },
               { label: "Horizon", value: `${portfolio.investment_horizon_years} years` },
             ].map((item, i) => (
               <div key={i}>
