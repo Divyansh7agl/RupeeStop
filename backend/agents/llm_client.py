@@ -37,6 +37,7 @@ class LLMClient:
             tools=["google_search_retrieval"]
         )
         self.groq_client = AsyncGroq(api_key=groq_key)
+        self.fallback_warning: Optional[str] = None  # set when Groq fallback is used
 
         logger.info("llm_client.initialized", gemini_model=GEMINI_MODEL, groq_model=GROQ_MODEL)
 
@@ -63,13 +64,15 @@ class LLMClient:
                 logger.error("llm.groq.failed", error=str(e))
                 raise RuntimeError(f"Groq failed: {e}")
 
+        gemini_error: Optional[str] = None
         for attempt in range(max_retries):
             try:
                 result = await self._gemini_complete(system_prompt, user_prompt, temperature)
                 logger.info("llm.gemini.success", attempt=attempt + 1)
                 return result
             except Exception as e:
-                logger.warning("llm.gemini.failed", attempt=attempt + 1, error=str(e))
+                gemini_error = str(e)
+                logger.warning("llm.gemini.failed", attempt=attempt + 1, error=gemini_error)
                 if attempt == max_retries - 1:
                     break
                 await asyncio.sleep(1.5 ** attempt)
@@ -77,11 +80,19 @@ class LLMClient:
         # Groq fallback
         try:
             result = await self._groq_complete(system_prompt, user_prompt, temperature)
+            self.fallback_warning = (
+                f"Gemini API limit reached — automatically switched to Groq ({GROQ_MODEL}). "
+                f"Results may vary slightly."
+            )
             logger.info("llm.groq.fallback_success")
             return result
         except Exception as e:
             logger.error("llm.groq.fallback_failed", error=str(e))
-            raise RuntimeError(f"Both Gemini and Groq failed: {e}")
+            raise RuntimeError(
+                f"Both Gemini and Groq API limits reached. "
+                f"Gemini error: {gemini_error}. Groq error: {e}. "
+                f"Please wait a few minutes and try again."
+            )
 
     async def _gemini_complete(self, system_prompt: str, user_prompt: str, temperature: float) -> str:
         full_prompt = f"{system_prompt}\n\n{user_prompt}"

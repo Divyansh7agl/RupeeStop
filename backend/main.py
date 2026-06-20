@@ -156,6 +156,15 @@ async def analyze_stream(request: QueryRequest):
         try:
             result, logs = await planner.run(request)
 
+            # Notify frontend if Gemini fell back to Groq
+            if llm_client.fallback_warning:
+                notice_event = {
+                    "type": "provider_notice",
+                    "message": llm_client.fallback_warning
+                }
+                yield f"data: {json.dumps(notice_event)}\n\n"
+                llm_client.fallback_warning = None  # reset for next request
+
             # Emit completed steps from logs
             for log in logs:
                 event = {

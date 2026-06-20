@@ -20,6 +20,7 @@ export default function App() {
   const [pipelineSteps, setPipelineSteps] = useState([]);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [providerNotice, setProviderNotice] = useState(null);
   const [activeTab, setActiveTab] = useState("committee");
   const [provider, setProvider] = useState("gemini");
   const abortRef = useRef(null);
@@ -29,6 +30,7 @@ export default function App() {
     setIsRunning(true);
     setResult(null);
     setError(null);
+    setProviderNotice(null);
     setPipelineSteps([]);
 
     const STEPS = [
@@ -73,6 +75,8 @@ export default function App() {
                     : s
                 )
               );
+            } else if (event.type === "provider_notice") {
+              setProviderNotice(event.message);
             } else if (event.type === "final_result") {
               setResult(event.data);
               setActiveTab("committee");
@@ -194,11 +198,30 @@ export default function App() {
           </div>
         </div>
 
+        {/* ── Provider fallback notice ── */}
+        {providerNotice && (
+          <div className="rs-glass-card animate-slide-up" style={{
+            borderLeft: "4px solid var(--color-accent-amber)",
+            padding: "16px 24px",
+            marginBottom: 24,
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 12,
+          }}>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, fontFamily: "var(--font-heading)", color: "var(--color-accent-amber)" }}>Switched to Fallback Model</div>
+              <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>{providerNotice}</div>
+            </div>
+          </div>
+        )}
+
         {/* ── Error ── */}
         {error && (
           <div className="rs-glass-card animate-slide-up" style={{ borderLeft: "4px solid var(--color-accent-red)", padding: "20px 24px", marginBottom: 40, color: "#fca5a5" }}>
-            <div style={{ fontWeight: 600, marginBottom: 4, fontFamily: "var(--font-heading)" }}>Analysis Failed</div>
-            <div style={{ fontSize: 14 }}>{error}</div>
+            <div style={{ fontWeight: 600, marginBottom: 4, fontFamily: "var(--font-heading)" }}>⚠ API Rate Limit Reached</div>
+            <div style={{ fontSize: 14, marginBottom: 8 }}>{error}</div>
+            <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>Both Gemini and Groq rate limits were hit. Please wait a few minutes and try again.</div>
           </div>
         )}
 
