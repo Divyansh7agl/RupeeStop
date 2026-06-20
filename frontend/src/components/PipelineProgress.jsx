@@ -1,11 +1,13 @@
+import { User, Lightbulb, Settings, Users, Flame, Scale, CheckCircle2 } from "lucide-react";
+
 const STEP_ICONS = {
-  load_profile: "👤",
-  planner: "🧠",
-  tool_execution: "🔧",
-  specialists_parallel: "⚡",
-  devils_advocate: "😈",
-  consensus: "⚖️",
-  pipeline_complete: "✅",
+  load_profile: <User size={20} />,
+  planner: <Lightbulb size={20} />,
+  tool_execution: <Settings size={20} />,
+  specialists_parallel: <Users size={20} />,
+  devils_advocate: <Flame size={20} />,
+  consensus: <Scale size={20} />,
+  pipeline_complete: <CheckCircle2 size={20} />,
 };
 
 export default function PipelineProgress({ steps, isRunning }) {
