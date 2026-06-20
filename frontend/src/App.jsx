@@ -12,7 +12,7 @@ const SAMPLE_QUESTIONS = [
   "Should I consolidate my two large cap funds into one?",
 ];
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export default function App() {
   const [question, setQuestion] = useState("");
@@ -90,99 +90,105 @@ export default function App() {
   };
 
   return (
-    <div className="app-container" style={{ minHeight: "100vh", paddingBottom: "60px" }}>
+    <div className="app-container" style={{ paddingBottom: "60px" }}>
       {/* Header */}
       <header style={{ 
-        borderBottom: "1px solid var(--color-border)", 
-        padding: "20px 40px", 
+        position: "sticky", top: 0, zIndex: 50,
+        background: "rgba(10, 10, 15, 0.7)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid var(--glass-border)",
+        padding: "16px 40px", 
         display: "flex", 
         alignItems: "center", 
-        gap: 16,
-        backgroundColor: "var(--color-bg-surface)"
+        justifyContent: "space-between"
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{
-            width: 40, height: 40, borderRadius: 8,
-            backgroundColor: "var(--color-accent-lime)",
-            color: "var(--color-bg-base)",
+            width: 44, height: 44, borderRadius: 12,
+            background: "linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent-lime) 100%)",
+            color: "#fff",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 20, fontWeight: "bold"
+            fontSize: 22, fontWeight: "bold",
+            boxShadow: "0 4px 20px rgba(20, 184, 166, 0.4)"
           }}>
             ₹
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 18, fontFamily: "var(--font-heading)", letterSpacing: "-0.5px" }}>Rupeestop</div>
-            <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontFamily: "var(--font-body)" }}>Investment Committee AI</div>
+            <div style={{ fontWeight: 800, fontSize: 20, fontFamily: "var(--font-heading)", letterSpacing: "-0.5px", background: "linear-gradient(to right, #fff, #a5b4fc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              Rupeestop
+            </div>
+            <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>Investment Committee AI</div>
           </div>
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 16, alignItems: "center" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, color: provider === "gemini" ? "var(--color-text-main)" : "var(--color-text-muted)" }}>
-            <input type="radio" value="gemini" checked={provider === "gemini"} onChange={(e) => setProvider(e.target.value)} style={{ accentColor: "var(--color-primary-light)" }} />
+        <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: 500, color: provider === "gemini" ? "var(--color-text-main)" : "var(--color-text-muted)" }}>
+            <input type="radio" value="gemini" checked={provider === "gemini"} onChange={(e) => setProvider(e.target.value)} style={{ accentColor: "var(--color-primary)" }} />
             Gemini 2.0 Flash
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, color: provider === "groq" ? "var(--color-accent-lime)" : "var(--color-text-muted)" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: 500, color: provider === "groq" ? "var(--color-accent-lime)" : "var(--color-text-muted)" }}>
             <input type="radio" value="groq" checked={provider === "groq"} onChange={(e) => setProvider(e.target.value)} style={{ accentColor: "var(--color-accent-lime)" }} />
             Groq (Llama-3.3-70b)
           </label>
         </div>
       </header>
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px" }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "60px 24px" }}>
         {/* Query Input */}
-        <div style={{ marginBottom: 40 }}>
+        <div className="animate-slide-up" style={{ marginBottom: 60 }}>
           <div style={{ 
-            fontSize: 14, 
-            color: "var(--color-text-muted)", 
-            marginBottom: 12, 
+            fontSize: 13, 
+            color: "var(--color-primary)", 
+            marginBottom: 16, 
             fontWeight: 700,
             fontFamily: "var(--font-heading)",
             textTransform: "uppercase",
-            letterSpacing: "1px"
+            letterSpacing: "1.5px",
+            display: "flex", alignItems: "center", gap: 8
           }}>
+            <span style={{width: 8, height: 8, borderRadius: "50%", background: "var(--color-primary)", boxShadow: "0 0 10px var(--color-primary)"}}></span>
             Ask The Committee
           </div>
-          <div style={{ display: "flex", gap: 16 }}>
+          <div style={{ display: "flex", gap: 16, position: "relative" }}>
             <textarea
+              className="rs-input-glass"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="e.g. Should I redeem my small cap fund? Am I over-diversified?"
               rows={2}
               style={{
-                flex: 1, 
-                backgroundColor: "var(--color-bg-input)", 
-                border: "1px solid var(--color-border)",
-                borderRadius: 8, 
-                padding: "16px 20px", 
-                color: "var(--color-text-main)",
-                fontSize: 15, 
+                flex: 1,
+                padding: "20px 24px", 
+                fontSize: 16, 
                 resize: "none", 
-                outline: "none",
-                fontFamily: "var(--font-body)", 
-                lineHeight: 1.5,
-                transition: "border-color 0.2s"
+                lineHeight: 1.6,
               }}
-              onFocus={(e) => e.target.style.borderColor = "var(--color-border-active)"}
-              onBlur={(e) => e.target.style.borderColor = "var(--color-border)"}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runAnalysis(); } }}
             />
             <button
               className="rs-btn-primary"
               onClick={runAnalysis}
               disabled={isRunning || !question.trim()}
-              style={{ minWidth: 140, fontSize: 16 }}
+              style={{ minWidth: 160, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
             >
-              {isRunning ? "Analyzing..." : "Analyze →"}
+              {isRunning ? (
+                <>
+                  <span style={{ display: "inline-block", animation: "pulseGlow 2s infinite" }}>●</span>
+                  Analyzing
+                </>
+              ) : "Analyze →"}
             </button>
           </div>
 
           {/* Sample questions */}
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 16 }}>
+          <div className="stagger-1 animate-slide-up" style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 24 }}>
+            <span style={{ fontSize: 13, color: "var(--color-text-muted)", alignSelf: "center", marginRight: 8 }}>Suggestions:</span>
             {SAMPLE_QUESTIONS.map((q, i) => (
               <button
                 key={i}
                 className="rs-btn-outline"
                 onClick={() => setQuestion(q)}
-                style={{ fontSize: 12 }}
+                style={{ fontSize: 13 }}
               >
                 {q.length > 65 ? q.slice(0, 62) + "..." : q}
               </button>
@@ -191,21 +197,22 @@ export default function App() {
         </div>
 
         {error && (
-          <div className="rs-card" style={{ borderLeft: "4px solid #ef4444", padding: "16px 20px", marginBottom: 32, color: "#fca5a5" }}>
-            ⚠️ {error}
+          <div className="rs-glass-card animate-slide-up" style={{ borderLeft: "4px solid #ef4444", padding: "20px 24px", marginBottom: 40, color: "#fca5a5" }}>
+            <div style={{fontWeight: 600, marginBottom: 4}}>Error Analysis Failed</div>
+            <div style={{fontSize: 14}}>{error}</div>
           </div>
         )}
 
         {/* Pipeline Progress */}
         {pipelineSteps.length > 0 && (
-          <div style={{ marginBottom: 40 }}>
+          <div className="animate-slide-up" style={{ marginBottom: 60 }}>
             <PipelineProgress steps={pipelineSteps} isRunning={isRunning} />
           </div>
         )}
 
         {/* Results */}
         {result && (
-          <div>
+          <div className="animate-slide-up stagger-2">
             {/* Tabs */}
             <div className="rs-tabs">
               {[
@@ -223,7 +230,7 @@ export default function App() {
               ))}
             </div>
 
-            <div style={{ marginTop: 24 }}>
+            <div style={{ marginTop: 32 }}>
               {activeTab === "committee" && <CommitteeOpinions opinions={result.committee_opinions} />}
               {activeTab === "verdict" && <FinalVerdict result={result} />}
               {activeTab === "portfolio" && <PortfolioSummary />}
@@ -232,13 +239,21 @@ export default function App() {
         )}
 
         {!result && !isRunning && pipelineSteps.length === 0 && (
-          <div style={{ textAlign: "center", padding: "100px 0", color: "var(--color-text-muted)" }}>
-            <div style={{ fontSize: 56, marginBottom: 24, opacity: 0.8 }}>₹</div>
-            <div style={{ fontSize: 24, fontWeight: 700, fontFamily: "var(--font-heading)", marginBottom: 12, color: "var(--color-text-main)" }}>
-              Investment Committee Ready
+          <div className="animate-slide-up stagger-2" style={{ textAlign: "center", padding: "100px 0", color: "var(--color-text-muted)" }}>
+            <div style={{ 
+              width: 100, height: 100, borderRadius: "50%", 
+              background: "rgba(20, 184, 166, 0.05)",
+              border: "1px solid rgba(20, 184, 166, 0.1)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 30px", fontSize: 40, color: "var(--color-primary)"
+            }}>
+              ₹
             </div>
-            <div style={{ fontSize: 16, fontFamily: "var(--font-body)", maxWidth: 500, margin: "0 auto" }}>
-              4 AI advisors will debate your question, analyze market data, and reach a consensus recommendation.
+            <div style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-heading)", marginBottom: 16, color: "var(--color-text-main)", letterSpacing: "-0.5px" }}>
+              Committee Standing By
+            </div>
+            <div style={{ fontSize: 16, maxWidth: 500, margin: "0 auto", lineHeight: 1.6 }}>
+              Our 4 AI advisors are ready to debate your question, analyze market data, and reach a holistic consensus recommendation.
             </div>
           </div>
         )}
