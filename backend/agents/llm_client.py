@@ -24,19 +24,26 @@ GROQ_MODEL = "llama-3.3-70b-versatile"
 class LLMClient:
     def __init__(self):
         gemini_key_str = os.getenv("GEMINI_API_KEY")
-        groq_key = os.getenv("GROQ_API_KEY")
+        groq_key_str = os.getenv("GROQ_API_KEY")
 
         if not gemini_key_str:
             raise ValueError("GEMINI_API_KEY not set in environment")
-        if not groq_key:
+        if not groq_key_str:
             raise ValueError("GROQ_API_KEY not set in environment")
 
         self.gemini_keys = [k.strip() for k in gemini_key_str.split(",") if k.strip()]
         if not self.gemini_keys:
             raise ValueError("No valid keys found in GEMINI_API_KEY")
             
+        self.groq_keys = [k.strip() for k in groq_key_str.split(",") if k.strip()]
+        if not self.groq_keys:
+            raise ValueError("No valid keys found in GROQ_API_KEY")
+            
         self.current_key_idx = 0
         genai.configure(api_key=self.gemini_keys[self.current_key_idx])
+
+        self.current_groq_key_idx = 0
+        self.groq_client = AsyncGroq(api_key=self.groq_keys[self.current_groq_key_idx])
 
         self.gemini_client = genai.GenerativeModel(GEMINI_MODEL)
         self.gemini_fallback_client = genai.GenerativeModel(GEMINI_FALLBACK_MODEL)
@@ -44,10 +51,9 @@ class LLMClient:
             GEMINI_MODEL,
             tools=["google_search_retrieval"]
         )
-        self.groq_client = AsyncGroq(api_key=groq_key)
         self.fallback_warning: Optional[str] = None  # set when fallback is used
 
-        logger.info("llm_client.initialized", gemini_model=GEMINI_MODEL, gemini_fallback=GEMINI_FALLBACK_MODEL, groq_model=GROQ_MODEL, keys_count=len(self.gemini_keys))
+        logger.info("llm_client.initialized", gemini_model=GEMINI_MODEL, gemini_fallback=GEMINI_FALLBACK_MODEL, groq_model=GROQ_MODEL, gemini_keys=len(self.gemini_keys), groq_keys=len(self.groq_keys))
 
     def _rotate_gemini_key(self):
         """Rotate to the next Gemini API key and re-initialize clients."""
@@ -61,6 +67,13 @@ class LLMClient:
             tools=["google_search_retrieval"]
         )
         logger.info("llm.gemini.rotating_key", new_idx=self.current_key_idx)
+
+    def _rotate_groq_key(self):
+        """Rotate to the next Groq API key and re-initialize client."""
+        self.current_groq_key_idx = (self.current_groq_key_idx + 1) % len(self.groq_keys)
+        next_key = self.groq_keys[self.current_groq_key_idx]
+        self.groq_client = AsyncGroq(api_key=next_key)
+        logger.info("llm.groq.rotating_key", new_idx=self.current_groq_key_idx)
 
     async def complete(
         self,
@@ -142,16 +155,26 @@ class LLMClient:
         return response.text.strip()
 
     async def _groq_complete(self, system_prompt: str, user_prompt: str, temperature: float) -> str:
-        response = await self.groq_client.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=temperature,
-            max_tokens=2048
-        )
-        return response.choices[0].message.content.strip()
+        last_error = None
+        for attempt in range(len(self.groq_keys)):
+            try:
+                response = await self.groq_client.chat.completions.create(
+                    model=GROQ_MODEL,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=temperature,
+                    max_tokens=2048
+                )
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                last_error = str(e)
+                logger.warning("llm.groq.failed", attempt=attempt+1, error=last_error)
+                if len(self.groq_keys) > 1:
+                    self._rotate_groq_key()
+                    
+        raise RuntimeError(f"Groq failed after trying all keys: {last_error}")
 
     async def search_market_context(self, query: str) -> str:
         """Gemini with Google Search grounding for live market data."""
@@ -178,22 +201,32 @@ class LLMClient:
 
     async def groq_market_context(self, query: str) -> str:
         """Groq fallback for market context using training knowledge."""
-        response = await self.groq_client.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an Indian financial market expert. Provide context based on your knowledge. "
-                        "Always note that this is based on training data, not live search."
-                    )
-                },
-                {"role": "user", "content": f"Provide market context for: {query}"}
-            ],
-            temperature=0.2,
-            max_tokens=1024
-        )
-        return response.choices[0].message.content.strip()
+        last_error = None
+        for attempt in range(len(self.groq_keys)):
+            try:
+                response = await self.groq_client.chat.completions.create(
+                    model=GROQ_MODEL,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are an Indian financial market expert. Provide context based on your knowledge. "
+                                "Always note that this is based on training data, not live search."
+                            )
+                        },
+                        {"role": "user", "content": f"Provide market context for: {query}"}
+                    ],
+                    temperature=0.2,
+                    max_tokens=1024
+                )
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                last_error = str(e)
+                logger.warning("llm.groq_market.failed", attempt=attempt+1, error=last_error)
+                if len(self.groq_keys) > 1:
+                    self._rotate_groq_key()
+                    
+        raise RuntimeError(f"Groq market context failed after trying all keys: {last_error}")
 
     async def complete_json(self, system_prompt: str, user_prompt: str, temperature: float = 0.3, provider: str = "gemini") -> dict:
         """Complete and parse JSON response with cleaning."""
