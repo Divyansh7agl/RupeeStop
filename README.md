@@ -2,6 +2,8 @@
 
 A multi-agent AI system that simulates an investment committee, enabling nuanced portfolio analysis through structured debate, evidence gathering, and consensus-driven recommendations.
 
+🔗 **Live Demo**: https://rupeestop.vercel.app
+
 ## Architecture
 
 ```
@@ -116,6 +118,7 @@ Confidence is not a simple average of individual agent confidence scores. The Co
 3. **No portfolio history**: Time-series analysis of the investor's own contribution history is not available.
 4. **LLM hallucination risk**: While agents are instructed to use tool data, they can occasionally hallucinate specific numbers. Production would add output validation.
 5. **Market Context search quality**: Depends on Gemini's search grounding quality and may not always retrieve the most current data.
+6. **API Rate Limits**: Free tier limits on Gemini (15 req/min) and Groq restrict heavy concurrent usage. Production deployment would use paid tier keys.
 
 ## Setup
 
