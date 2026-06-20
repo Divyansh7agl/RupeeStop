@@ -1,13 +1,11 @@
-import { AlertTriangle } from "lucide-react";
-
 function ConfidenceDial({ score }) {
   const pct = Math.round(score * 100);
   const color =
     pct >= 75
       ? "var(--color-accent-lime)"
       : pct >= 55
-      ? "#f59e0b"
-      : "#f97316";
+        ? "#f59e0b"
+        : "#f97316";
   const label =
     pct >= 75 ? "High Confidence" : pct >= 55 ? "Moderate Confidence" : "Low Confidence";
 
@@ -253,9 +251,9 @@ export default function FinalVerdict({ result }) {
           <div className="rs-card-body">
             <div
               className="rs-stat-label"
-              style={{ color: "var(--color-accent-red)", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}
+              style={{ color: "var(--color-accent-red)", marginBottom: 14 }}
             >
-              <AlertTriangle size={18} /> Risk Warnings
+              ⚠ Risk Warnings
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {result.risk_warnings.map((w, i) => (

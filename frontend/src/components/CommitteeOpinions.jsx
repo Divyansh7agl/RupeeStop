@@ -1,27 +1,25 @@
-import { Shield, TrendingUp, PieChart, Flame, Bot } from "lucide-react";
-
 const ADVISOR_CONFIG = {
   conservative: {
     label: "Conservative Advisor",
-    icon: <Shield size={24} />,
+    icon: "🛡️",
     borderColor: "#f59e0b",
     desc: "Capital Preservation Focus",
   },
   growth: {
     label: "Growth Advisor",
-    icon: <TrendingUp size={24} />,
+    icon: "🚀",
     borderColor: "#00ee67",
     desc: "Long-term Returns Focus",
   },
   cost_efficiency: {
     label: "Cost & Efficiency Advisor",
-    icon: <PieChart size={24} />,
+    icon: "📊",
     borderColor: "#0d9488",
     desc: "Portfolio Simplicity Focus",
   },
   devils_advocate: {
     label: "Devil's Advocate",
-    icon: <Flame size={24} />,
+    icon: "😈",
     borderColor: "#ef4444",
     desc: "Challenge & Risk Focus",
   },
@@ -41,8 +39,8 @@ function ConfidenceBar({ value }) {
     pct >= 75
       ? "var(--color-accent-lime)"
       : pct >= 50
-      ? "#f59e0b"
-      : "#f97316";
+        ? "#f59e0b"
+        : "#f97316";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <div
@@ -86,7 +84,7 @@ function ConfidenceBar({ value }) {
 function AdvisorCard({ type, opinion, index }) {
   const config = ADVISOR_CONFIG[type] || {
     label: type,
-    icon: <Bot size={24} />,
+    icon: "🤖",
     borderColor: "var(--color-primary)",
     desc: "",
   };

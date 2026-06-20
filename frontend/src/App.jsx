@@ -3,7 +3,7 @@ import PipelineProgress from "./components/PipelineProgress";
 import CommitteeOpinions from "./components/CommitteeOpinions";
 import FinalVerdict from "./components/FinalVerdict";
 import PortfolioSummary from "./components/PortfolioSummary";
-import { AlertTriangle } from "lucide-react";
+
 const SAMPLE_QUESTIONS = [
   "Should I redeem my small cap SIP given current market volatility?",
   "Am I over-diversified across my 8 mutual funds?",
@@ -83,7 +83,7 @@ export default function App() {
             } else if (event.type === "error") {
               setError(event.message);
             }
-          } catch {}
+          } catch { }
         }
       }
     } catch (err) {
@@ -184,6 +184,7 @@ export default function App() {
 
           {/* Sample questions */}
           <div className="stagger-1 animate-slide-up" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 20 }}>
+            <span style={{ fontSize: 12, color: "var(--color-text-muted)", alignSelf: "center", marginRight: 4 }}>Suggestions:</span>
             {SAMPLE_QUESTIONS.map((q, i) => (
               <button
                 key={i}
@@ -207,7 +208,7 @@ export default function App() {
             alignItems: "flex-start",
             gap: 12,
           }}>
-            <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}><AlertTriangle size={20} color="var(--color-accent-amber)" /></span>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
             <div>
               <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, fontFamily: "var(--font-heading)", color: "var(--color-accent-amber)" }}>Switched to Fallback Model</div>
               <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>{providerNotice}</div>
@@ -219,7 +220,7 @@ export default function App() {
         {error && (
           <div className="rs-glass-card animate-slide-up" style={{ borderLeft: "4px solid var(--color-accent-red)", padding: "20px 24px", marginBottom: 40 }}>
             <div style={{ fontWeight: 600, marginBottom: 6, fontFamily: "var(--font-heading)", color: "#fca5a5", display: "flex", alignItems: "center", gap: 8 }}>
-              <AlertTriangle size={18} /> Rate Limit Reached
+              ⚠ Rate Limit Reached
             </div>
             <div style={{ fontSize: 14, color: "var(--color-text-muted)", lineHeight: 1.6 }}>
               Both Gemini and Groq API limits are currently exhausted. Please wait a few minutes and try again.

@@ -102,8 +102,15 @@ h1, h2, h3, h4, h5, h6 {
 
 .rs-btn-primary:hover:not(:disabled) {
   background: #00d45c;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: 0 6px 24px var(--color-accent-lime-glow);
+  animation: limePulseHover 1.5s infinite;
+}
+
+@keyframes limePulseHover {
+  0%   { box-shadow: 0 0 0 0 var(--color-accent-lime-glow); }
+  70%  { box-shadow: 0 0 0 12px rgba(0, 238, 103, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 238, 103, 0); }
 }
 
 .rs-btn-primary:active:not(:disabled) {

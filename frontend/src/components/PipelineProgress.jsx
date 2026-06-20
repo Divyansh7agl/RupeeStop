@@ -1,13 +1,11 @@
-import { User, Lightbulb, Settings, Users, Flame, Scale, CheckCircle2 } from "lucide-react";
-
 const STEP_ICONS = {
-  load_profile: <User size={20} />,
-  planner: <Lightbulb size={20} />,
-  tool_execution: <Settings size={20} />,
-  specialists_parallel: <Users size={20} />,
-  devils_advocate: <Flame size={20} />,
-  consensus: <Scale size={20} />,
-  pipeline_complete: <CheckCircle2 size={20} />,
+  load_profile: "👤",
+  planner: "🧠",
+  tool_execution: "🔧",
+  specialists_parallel: "⚡",
+  devils_advocate: "😈",
+  consensus: "⚖️",
+  pipeline_complete: "✅",
 };
 
 export default function PipelineProgress({ steps, isRunning }) {
@@ -61,20 +59,20 @@ export default function PipelineProgress({ steps, isRunning }) {
             const circleColor = isCompleted
               ? "var(--color-accent-lime)"
               : isRunningStep
-              ? "var(--color-primary)"
-              : "var(--color-border)";
+                ? "var(--color-primary)"
+                : "var(--color-border)";
 
             const circleBg = isCompleted
               ? "rgba(0, 238, 103, 0.1)"
               : isRunningStep
-              ? "rgba(13, 148, 136, 0.12)"
-              : "var(--color-surface-2)";
+                ? "rgba(13, 148, 136, 0.12)"
+                : "var(--color-surface-2)";
 
             const labelColor = isCompleted
               ? "var(--color-text-main)"
               : isRunningStep
-              ? "var(--color-primary)"
-              : "var(--color-text-muted)";
+                ? "var(--color-primary)"
+                : "var(--color-text-muted)";
 
             return (
               <div

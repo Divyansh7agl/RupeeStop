@@ -72,35 +72,6 @@ class LLMClient:
         self.groq_client = AsyncGroq(api_key=next_key)
         logger.info("llm.groq.rotating_key", new_idx=self.current_groq_key_idx)
 
-    async def complete_json(
-        self,
-        system_prompt: str,
-        user_prompt: str,
-        temperature: float = 0.3,
-        max_retries: int = 2,
-        provider: str = "gemini"
-    ) -> dict:
-        """
-        Calls complete() and parses the result as JSON.
-        """
-        result_str = await self.complete(
-            system_prompt, 
-            user_prompt, 
-            expect_json=True, 
-            temperature=temperature, 
-            max_retries=max_retries, 
-            provider=provider
-        )
-        try:
-            if "```json" in result_str:
-                result_str = result_str.split("```json")[1].split("```")[0]
-            elif "```" in result_str:
-                result_str = result_str.split("```")[1].split("```")[0]
-            return json.loads(result_str.strip())
-        except Exception as e:
-            logger.error("llm.json_parse_failed", error=str(e), result=result_str)
-            raise
-
     async def complete(
         self,
         system_prompt: str,
@@ -160,7 +131,7 @@ class LLMClient:
         except Exception as e:
             logger.error("llm.groq.fallback_failed", error=str(e))
             raise RuntimeError(
-                "Both Gemini (2.0) and Groq API rate limits have been reached. "
+                "Both Gemini and Groq API rate limits have been reached. "
                 "Please wait a few minutes and try again."
             )
 
