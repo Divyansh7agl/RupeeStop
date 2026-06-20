@@ -12,12 +12,3 @@ services:
       - key: GROQ_API_KEY
         sync: false
 
-  - type: web
-    name: rupeestop-frontend
-    env: static
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
-    envVars:
-      - key: VITE_API_BASE_URL
-        sync: false
