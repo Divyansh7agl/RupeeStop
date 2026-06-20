@@ -17,6 +17,7 @@ from groq import AsyncGroq
 logger = structlog.get_logger(__name__)
 
 GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_FALLBACK_MODEL = "gemini-1.5-flash"
 GROQ_MODEL = "llama-3.3-70b-versatile"
 
 
@@ -32,14 +33,15 @@ class LLMClient:
 
         genai.configure(api_key=gemini_key)
         self.gemini_client = genai.GenerativeModel(GEMINI_MODEL)
+        self.gemini_fallback_client = genai.GenerativeModel(GEMINI_FALLBACK_MODEL)
         self.gemini_search_client = genai.GenerativeModel(
             GEMINI_MODEL,
             tools=["google_search_retrieval"]
         )
         self.groq_client = AsyncGroq(api_key=groq_key)
-        self.fallback_warning: Optional[str] = None  # set when Groq fallback is used
+        self.fallback_warning: Optional[str] = None  # set when fallback is used
 
-        logger.info("llm_client.initialized", gemini_model=GEMINI_MODEL, groq_model=GROQ_MODEL)
+        logger.info("llm_client.initialized", gemini_model=GEMINI_MODEL, gemini_fallback=GEMINI_FALLBACK_MODEL, groq_model=GROQ_MODEL)
 
     async def complete(
         self,
@@ -77,6 +79,17 @@ class LLMClient:
                     break
                 await asyncio.sleep(1.5 ** attempt)
 
+        # Gemini 1.5 Flash fallback
+        try:
+            result = await self._gemini_complete(system_prompt, user_prompt, temperature, client=self.gemini_fallback_client)
+            self.fallback_warning = (
+                f"Gemini {GEMINI_MODEL} limit reached — automatically switched to {GEMINI_FALLBACK_MODEL}."
+            )
+            logger.info("llm.gemini_fallback.success")
+            return result
+        except Exception as e:
+            logger.warning("llm.gemini_fallback.failed", error=str(e))
+
         # Groq fallback
         try:
             result = await self._groq_complete(system_prompt, user_prompt, temperature)
@@ -89,18 +102,21 @@ class LLMClient:
         except Exception as e:
             logger.error("llm.groq.fallback_failed", error=str(e))
             raise RuntimeError(
-                "Both Gemini and Groq API rate limits have been reached. "
+                "Both Gemini (2.0 and 1.5) and Groq API rate limits have been reached. "
                 "Please wait a few minutes and try again."
             )
 
-    async def _gemini_complete(self, system_prompt: str, user_prompt: str, temperature: float) -> str:
+    async def _gemini_complete(self, system_prompt: str, user_prompt: str, temperature: float, client=None) -> str:
+        if client is None:
+            client = self.gemini_client
+            
         full_prompt = f"{system_prompt}\n\n{user_prompt}"
         config = genai.GenerationConfig(temperature=temperature)
 
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(
             None,
-            lambda: self.gemini_client.generate_content(full_prompt, generation_config=config)
+            lambda: client.generate_content(full_prompt, generation_config=config)
         )
         return response.text.strip()
 
