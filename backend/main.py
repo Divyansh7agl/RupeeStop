@@ -20,6 +20,7 @@ import structlog
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.encoders import jsonable_encoder
 
 from models.schemas import QueryRequest, FinalRecommendation, PipelineLog
 from agents.llm_client import LLMClient
@@ -150,7 +151,7 @@ async def analyze_stream(request: QueryRequest):
             # Emit the final result
             await queue.put({
                 "type": "final_result",
-                "data": result.model_dump()
+                "data": jsonable_encoder(result)
             })
 
         except Exception as e:
@@ -178,7 +179,27 @@ async def analyze_stream(request: QueryRequest):
                 if item is _DONE:
                     break
 
-                yield f"data: {json.dumps(item)}\n\n"
+                # Sanitize NaN values recursively to ensure standard JSON compliance
+                import math
+                def sanitize_floats(obj):
+                    if isinstance(obj, float):
+                        if math.isnan(obj) or math.isinf(obj):
+                            return None
+                        return obj
+                    elif isinstance(obj, dict):
+                        return {k: sanitize_floats(v) for k, v in obj.items()}
+                    elif isinstance(obj, (list, tuple)):
+                        return [sanitize_floats(v) for v in obj]
+                    return obj
+                
+                try:
+                    safe_item = sanitize_floats(item)
+                    json_str = json.dumps(safe_item)
+                except Exception as e:
+                    logger.error("api.stream.json_encode_error", error=str(e))
+                    json_str = json.dumps({"type": "error", "message": f"JSON encode error: {str(e)}"})
+                
+                yield f"data: {json_str}\n\n"
 
         finally:
             pipeline_task.cancel()
