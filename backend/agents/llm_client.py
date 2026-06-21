@@ -304,7 +304,7 @@ class LLMClient:
             cleaned = "\n".join(lines[1:-1]) if lines[-1].strip() == "```" else "\n".join(lines[1:])
         cleaned = cleaned.strip()
         try:
-            return json.loads(cleaned)
+            return json.loads(cleaned, strict=False)
         except json.JSONDecodeError as e:
             logger.error("llm.json_parse_failed", error=str(e), raw_preview=cleaned[:200])
             raise ValueError(f"LLM returned invalid JSON: {e}\nRaw: {cleaned[:300]}")
