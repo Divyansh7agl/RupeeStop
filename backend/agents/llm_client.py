@@ -150,6 +150,8 @@ class LLMClient:
         Within each provider, rotates across all available keys on rate-limit errors.
         Returns raw string (JSON or text).
         """
+        tried_groq = False
+
         if provider == "groq":
             return await self._complete_with_pool(
                 self._groq_pool, self._groq_complete, system_prompt, user_prompt, temperature

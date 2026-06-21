@@ -20,6 +20,7 @@ export default function App() {
   const [pipelineSteps, setPipelineSteps] = useState([]);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [providerNotice, setProviderNotice] = useState(null);
   const [activeTab, setActiveTab] = useState("committee");
   const [provider, setProvider] = useState("gemini");
   const abortRef = useRef(null);
@@ -29,6 +30,7 @@ export default function App() {
     setIsRunning(true);
     setResult(null);
     setError(null);
+    setProviderNotice(null);
     setPipelineSteps([]);
 
     const STEPS = [
@@ -73,13 +75,15 @@ export default function App() {
                     : s
                 )
               );
+            } else if (event.type === "provider_notice") {
+              setProviderNotice(event.message);
             } else if (event.type === "final_result") {
               setResult(event.data);
               setActiveTab("committee");
             } else if (event.type === "error") {
               setError(event.message);
             }
-          } catch {}
+          } catch { }
         }
       }
     } catch (err) {
@@ -169,17 +173,28 @@ export default function App() {
           <div className="error-banner">⚠️ {error}</div>
         )}
 
-        {/* Pipeline Progress */}
+        {/* ── Error ── */}
+        {error && (
+          <div className="rs-glass-card animate-slide-up" style={{ borderLeft: "4px solid var(--color-accent-red)", padding: "20px 24px", marginBottom: 40 }}>
+            <div style={{ fontWeight: 600, marginBottom: 6, fontFamily: "var(--font-heading)", color: "#fca5a5", display: "flex", alignItems: "center", gap: 8 }}>
+              ⚠ Rate Limit Reached
+            </div>
+            <div style={{ fontSize: 14, color: "var(--color-text-muted)", lineHeight: 1.6 }}>
+              Both Gemini and Groq API limits are currently exhausted. Please wait a few minutes and try again.
+            </div>
+          </div>
+        )}
+
+        {/* ── Pipeline Progress ── */}
         {pipelineSteps.length > 0 && (
-          <div style={{ marginBottom: 40 }}>
+          <div className="animate-slide-up" style={{ marginBottom: 60 }}>
             <PipelineProgress steps={pipelineSteps} isRunning={isRunning} />
           </div>
         )}
 
-        {/* Results */}
+        {/* ── Results ── */}
         {result && (
-          <div>
-            {/* Tabs */}
+          <div className="animate-slide-up stagger-2">
             <div className="rs-tabs">
               {[
                 { id: "committee", label: "Committee Opinions" },

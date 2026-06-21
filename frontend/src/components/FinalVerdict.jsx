@@ -67,7 +67,7 @@ export default function FinalVerdict({ result }) {
 
       {/* Action Items */}
       {result.action_items?.length > 0 && (
-        <div className="rs-card">
+        <div className="rs-glass-card">
           <div className="rs-card-body">
             <div className="section-micro-label" style={{ marginBottom: 16 }}>Action Items</div>
             <div className="action-items-list">
@@ -120,7 +120,7 @@ export default function FinalVerdict({ result }) {
 
       {/* Evidence Base */}
       {result.evidence?.length > 0 && (
-        <div className="rs-card">
+        <div className="rs-glass-card">
           <div className="rs-card-body">
             <div className="section-micro-label" style={{ marginBottom: 16 }}>Evidence Base</div>
             <div className="evidence-base-tags">

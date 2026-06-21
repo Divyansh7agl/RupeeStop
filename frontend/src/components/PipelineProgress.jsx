@@ -31,7 +31,7 @@ function SpinnerIcon() {
 
 export default function PipelineProgress({ steps }) {
   return (
-    <div className="rs-card">
+    <div className="rs-glass-card">
       <div className="rs-card-body">
         <div className="component-label">Pipeline Execution</div>
 
@@ -67,6 +67,59 @@ export default function PipelineProgress({ steps }) {
                   <div className="pipeline-step-detail">
                     {step.details.slice(0, 35)}…
                   </div>
+
+                  {/* Label */}
+                  <div
+                    style={{
+                      fontSize: 11,
+                      marginTop: 12,
+                      textAlign: "center",
+                      color: labelColor,
+                      fontWeight: isPending ? 400 : 600,
+                      maxWidth: 86,
+                      lineHeight: 1.4,
+                      fontFamily: "var(--font-heading)",
+                      transition: "color 0.3s ease",
+                    }}
+                  >
+                    {step.label}
+                  </div>
+
+                  {/* Running detail */}
+                  {isRunningStep && step.details && (
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: "var(--color-text-muted)",
+                        textAlign: "center",
+                        maxWidth: 100,
+                        marginTop: 6,
+                        background: "var(--color-surface-2)",
+                        padding: "3px 7px",
+                        borderRadius: 4,
+                        border: "1px solid var(--color-border)",
+                      }}
+                    >
+                      {step.details.slice(0, 35)}...
+                    </div>
+                  )}
+                </div>
+
+                {/* Connector line */}
+                {i < steps.length - 1 && (
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 2,
+                      minWidth: 16,
+                      background: isCompleted
+                        ? "var(--color-accent-lime)"
+                        : "var(--color-border)",
+                      transition: "background 0.4s ease",
+                      marginBottom: 38,
+                      borderRadius: 2,
+                    }}
+                  />
                 )}
               </div>
 

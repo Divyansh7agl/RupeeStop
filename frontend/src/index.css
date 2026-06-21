@@ -51,7 +51,7 @@ body {
   min-height: 100vh;
   color: var(--color-text-main);
   font-family: var(--font-body);
-  line-height: 1.5;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -244,8 +244,9 @@ h1, h2, h3, h4, h5, h6 {
   border: 1.5px solid rgba(13, 148, 136, 0.25);
 }
 
+/* ── Suggestion Pills ── */
 .rs-btn-outline {
-  background-color: transparent;
+  background: transparent;
   color: var(--color-text-muted);
   font-family: var(--font-body);
   font-weight: 500;
@@ -380,7 +381,6 @@ h1, h2, h3, h4, h5, h6 {
 
 .rs-tab.active {
   color: var(--color-accent-lime);
-  border-bottom-color: var(--color-accent-lime);
 }
 
 /* ─── Tab content wrapper ────────────────────────────────────────────────────── */
@@ -1104,3 +1104,102 @@ h1, h2, h3, h4, h5, h6 {
   0%, 100% { box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.2); }
   50%       { box-shadow: 0 0 0 8px rgba(13, 148, 136, 0.08); }
 }
+
+/* ── Evidence chips ── */
+.rs-chip {
+  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+/* ── Key point items ── */
+.rs-key-point {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--color-surface-2);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.rs-key-point-arrow {
+  color: var(--color-primary);
+  font-size: 13px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+/* ── Portfolio table ── */
+.rs-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.rs-table thead tr {
+  background: var(--color-surface-2);
+}
+
+.rs-table thead th {
+  padding: 14px 20px;
+  text-align: left;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-family: var(--font-heading);
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rs-table tbody tr {
+  border-bottom: 1px solid var(--color-border);
+  transition: background 0.15s ease;
+}
+
+.rs-table tbody tr:nth-child(even) {
+  background: rgba(13, 43, 42, 0.5);
+}
+
+.rs-table tbody tr:hover {
+  background: var(--color-surface-2);
+}
+
+.rs-table tbody td {
+  padding: 18px 20px;
+}
+
+/* ── Animations ── */
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGlow {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes tealPulse {
+  0%   { box-shadow: 0 0 0 0 var(--color-primary-glow); }
+  70%  { box-shadow: 0 0 0 8px rgba(13, 148, 136, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); }
+}
+
+.animate-slide-up {
+  animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.stagger-1 { animation-delay: 0.05s; opacity: 0; }
+.stagger-2 { animation-delay: 0.1s;  opacity: 0; }
+.stagger-3 { animation-delay: 0.15s; opacity: 0; }
+.stagger-4 { animation-delay: 0.2s;  opacity: 0; }
