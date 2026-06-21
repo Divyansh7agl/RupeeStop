@@ -4,12 +4,12 @@ Realistic fund names, expense ratios, categories based on real Indian MF market.
 """
 
 SAMPLE_PORTFOLIO = {
-    "age": 35,
-    "risk_profile": "moderate",
-    "monthly_income": 120000,
-    "monthly_investment": 25000,
-    "goals": ["retirement", "child_education"],
-    "investment_horizon_years": 25,
+    "age": 22,
+    "risk_profile": "aggressive",
+    "monthly_income": 60000,
+    "monthly_investment": 15000,
+    "goals": ["wealth_creation", "retirement"],
+    "investment_horizon_years": 38,
     "portfolio": [
         {
             "fund_name": "Mirae Asset Large Cap Fund",

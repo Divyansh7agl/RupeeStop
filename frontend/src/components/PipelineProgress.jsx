@@ -1,84 +1,83 @@
-const STEP_ICONS = {
-  load_profile: "👤",
-  planner: "🧠",
-  tool_execution: "🔧",
-  specialists_parallel: "⚡",
-  devils_advocate: "😈",
-  consensus: "⚖️",
-  pipeline_complete: "✅",
+import Icon from "./Icon";
+
+// Maps each pipeline step ID to its SVG icon name
+const STEP_ICON = {
+  load_profile:         "user",
+  planner:              "brain",
+  tool_execution:       "wrench",
+  specialists_parallel: "bolt",
+  devils_advocate:      "flame",
+  consensus:            "scale",
+  pipeline_complete:    "check",
 };
 
-const STEP_COLORS = {
-  pending: "var(--color-text-muted)",
-  running: "var(--color-accent-lime)",
-  completed: "var(--color-primary-light)",
-  failed: "#ef4444",
-};
+// Spinning SVG loader — used while a step is running
+function SpinnerIcon() {
+  return (
+    <svg
+      width="22" height="22" viewBox="0 0 20 20"
+      fill="none" xmlns="http://www.w3.org/2000/svg"
+      className="pipeline-spin"
+      stroke="var(--color-primary-light)"
+    >
+      <circle cx="10" cy="10" r="7"
+        strokeWidth="2.2"
+        strokeDasharray="18 26"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
-export default function PipelineProgress({ steps, isRunning }) {
+export default function PipelineProgress({ steps }) {
   return (
     <div className="rs-card">
       <div className="rs-card-body">
-        <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 700, marginBottom: 20, letterSpacing: "0.05em", fontFamily: "var(--font-heading)" }}>
-          PIPELINE EXECUTION
-        </div>
+        <div className="component-label">Pipeline Execution</div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 0, overflowX: "auto", paddingBottom: 4 }}>
+        <div className="pipeline-steps">
           {steps.map((step, i) => (
-            <div key={step.id} style={{ display: "flex", alignItems: "center", flex: i < steps.length - 1 ? 1 : 0 }}>
+            <div
+              key={step.id}
+              className={`pipeline-step-wrap${i < steps.length - 1 ? " has-connector" : ""}`}
+            >
               {/* Step node */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 90 }}>
-                <div style={{
-                  width: 46, height: 46, borderRadius: "50%",
-                  backgroundColor: step.status === "completed" ? "var(--color-bg-base)"
-                    : step.status === "running" ? "var(--color-bg-surface-hover)"
-                    : "var(--color-bg-input)",
-                  border: `2px solid ${STEP_COLORS[step.status] || "var(--color-border)"}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 20, position: "relative",
-                  boxShadow: step.status === "running" ? `0 0 16px ${STEP_COLORS.running}33` : "none",
-                  transition: "all 0.3s"
-                }}>
+              <div className="pipeline-step">
+                <div className={`pipeline-node ${step.status}`}>
                   {step.status === "running" ? (
-                    <span style={{ animation: "spin 1.5s linear infinite", display: "inline-block" }}>⟳</span>
-                  ) : STEP_ICONS[step.id]}
+                    <SpinnerIcon />
+                  ) : (
+                    <Icon
+                      name={STEP_ICON[step.id] ?? "check"}
+                      size={20}
+                      color={
+                        step.status === "completed" ? "var(--color-accent-lime)"
+                        : step.status === "failed"   ? "var(--color-red)"
+                        : "var(--color-text-muted)"
+                      }
+                    />
+                  )}
                 </div>
-                <div style={{
-                  fontSize: 11, marginTop: 8, textAlign: "center",
-                  color: step.status === "completed" ? "var(--color-text-main)"
-                    : step.status === "running" ? "var(--color-accent-lime)"
-                    : "var(--color-text-muted)",
-                  fontWeight: step.status !== "pending" ? 600 : 400,
-                  maxWidth: 80, lineHeight: 1.3
-                }}>
+
+                <div className={`pipeline-step-label ${step.status}`}>
                   {step.label}
                 </div>
+
                 {step.status === "running" && step.details && (
-                  <div style={{ fontSize: 10, color: "var(--color-text-muted)", textAlign: "center", maxWidth: 90, marginTop: 4 }}>
-                    {step.details.slice(0, 35)}...
+                  <div className="pipeline-step-detail">
+                    {step.details.slice(0, 35)}…
                   </div>
                 )}
               </div>
 
               {/* Connector line */}
               {i < steps.length - 1 && (
-                <div style={{
-                  flex: 1, height: 2, minWidth: 16,
-                  background: step.status === "completed"
-                    ? "linear-gradient(90deg, var(--color-primary-light), var(--color-accent-lime))"
-                    : "var(--color-border)",
-                  transition: "background 0.5s",
-                  marginBottom: 28
-                }} />
+                <div className={`pipeline-connector${step.status === "completed" ? " completed" : ""}`} />
               )}
             </div>
           ))}
         </div>
       </div>
-
-      <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 }

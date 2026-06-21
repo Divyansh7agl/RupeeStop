@@ -274,7 +274,7 @@ async def market_context_tool(query: str, llm_client=None, provider: str = "gemi
     from datetime import datetime
     logger.info("tool.market_context.start", query=query)
 
-    if provider == "gemini" and llm_client and hasattr(llm_client, 'gemini_client'):
+    if provider == "gemini" and llm_client and hasattr(llm_client, '_gemini_pool'):
         try:
             result = await llm_client.search_market_context(query)
             logger.info("tool.market_context.gemini_success")
@@ -288,7 +288,7 @@ async def market_context_tool(query: str, llm_client=None, provider: str = "gemi
             logger.warning("tool.market_context.gemini_failed", error=str(e))
 
     # Groq fallback or direct request
-    if llm_client and hasattr(llm_client, 'groq_client'):
+    if llm_client and hasattr(llm_client, '_groq_pool'):
         try:
             result = await llm_client.groq_market_context(query)
             logger.info("tool.market_context.groq_fallback_success")

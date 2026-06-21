@@ -1,4 +1,29 @@
-node_modules/
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Environment variables
 .env
 backend/.env
+frontend/.env
+frontend/.env.local
+
+# Node
+node_modules/
 frontend/node_modules/
+
+# Vite build output
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db

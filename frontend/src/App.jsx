@@ -5,14 +5,14 @@ import FinalVerdict from "./components/FinalVerdict";
 import PortfolioSummary from "./components/PortfolioSummary";
 
 const SAMPLE_QUESTIONS = [
-  "Should I redeem my small cap fund given current market volatility?",
-  "Am I over-diversified with 8 funds in my portfolio?",
+  "Should I redeem my small cap SIP given current market volatility?",
+  "Am I over-diversified across my 8 mutual funds?",
   "Is my portfolio allocation consistent with my age and moderate risk profile?",
-  "Why might my portfolio be more volatile than expected?",
-  "Should I consolidate my two large cap funds into one?",
+  "Should I increase my debt allocation for my child's education goal?",
+  "Should I consolidate my two large cap funds to reduce overlap?",
 ];
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 
 export default function App() {
   const [question, setQuestion] = useState("");
@@ -32,13 +32,13 @@ export default function App() {
     setPipelineSteps([]);
 
     const STEPS = [
-      { id: "load_profile", label: "Loading Portfolio" },
-      { id: "planner", label: "Planner Agent" },
-      { id: "tool_execution", label: "Running Tools" },
+      { id: "load_profile",         label: "Loading Portfolio"   },
+      { id: "planner",              label: "Planner Agent"       },
+      { id: "tool_execution",       label: "Running Tools"       },
       { id: "specialists_parallel", label: "Specialist Advisors" },
-      { id: "devils_advocate", label: "Devil's Advocate" },
-      { id: "consensus", label: "Consensus Agent" },
-      { id: "pipeline_complete", label: "Complete" },
+      { id: "devils_advocate",      label: "Devil's Advocate"    },
+      { id: "consensus",            label: "Consensus Agent"     },
+      { id: "pipeline_complete",    label: "Complete"            },
     ];
 
     setPipelineSteps(STEPS.map((s) => ({ ...s, status: "pending", details: "" })));
@@ -90,110 +90,83 @@ export default function App() {
   };
 
   return (
-    <div className="app-container" style={{ minHeight: "100vh", paddingBottom: "60px" }}>
+    <div className="app-container">
       {/* Header */}
-      <header style={{ 
-        borderBottom: "1px solid var(--color-border)", 
-        padding: "20px 40px", 
-        display: "flex", 
-        alignItems: "center", 
-        gap: 16,
-        backgroundColor: "var(--color-bg-surface)"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 8,
-            backgroundColor: "var(--color-accent-lime)",
-            color: "var(--color-bg-base)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 20, fontWeight: "bold"
-          }}>
-            ₹
-          </div>
+      <header className="app-header">
+        <div className="app-header-logo-wrap">
+          <div className="app-header-logo">₹</div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 18, fontFamily: "var(--font-heading)", letterSpacing: "-0.5px" }}>Rupeestop</div>
-            <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontFamily: "var(--font-body)" }}>Investment Committee AI</div>
+            <div className="app-header-title">Rupeestop</div>
+            <div className="app-header-subtitle">Investment Committee AI</div>
           </div>
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 16, alignItems: "center" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, color: provider === "gemini" ? "var(--color-text-main)" : "var(--color-text-muted)" }}>
-            <input type="radio" value="gemini" checked={provider === "gemini"} onChange={(e) => setProvider(e.target.value)} style={{ accentColor: "var(--color-primary-light)" }} />
+
+        <div className="app-header-controls">
+          <label className={`provider-label${provider === "gemini" ? " active" : ""}`}>
+            <input
+              type="radio"
+              value="gemini"
+              checked={provider === "gemini"}
+              onChange={(e) => setProvider(e.target.value)}
+            />
             Gemini 2.0 Flash
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, fontWeight: 700, color: provider === "groq" ? "var(--color-accent-lime)" : "var(--color-text-muted)" }}>
-            <input type="radio" value="groq" checked={provider === "groq"} onChange={(e) => setProvider(e.target.value)} style={{ accentColor: "var(--color-accent-lime)" }} />
+          <label className={`provider-label${provider === "groq" ? " active" : ""}`}>
+            <input
+              type="radio"
+              value="groq"
+              checked={provider === "groq"}
+              onChange={(e) => setProvider(e.target.value)}
+            />
             Groq (Llama-3.3-70b)
           </label>
         </div>
       </header>
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 24px" }}>
+      <div className="app-content">
         {/* Query Input */}
-        <div style={{ marginBottom: 40 }}>
-          <div style={{ 
-            fontSize: 14, 
-            color: "var(--color-text-muted)", 
-            marginBottom: 12, 
-            fontWeight: 700,
-            fontFamily: "var(--font-heading)",
-            textTransform: "uppercase",
-            letterSpacing: "1px"
-          }}>
-            Ask The Committee
-          </div>
-          <div style={{ display: "flex", gap: 16 }}>
+        <div className="query-section">
+          <div className="section-label">Ask The Committee</div>
+
+          <div className="query-input-row">
             <textarea
+              className="query-textarea"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="e.g. Should I redeem my small cap fund? Am I over-diversified?"
+              placeholder="e.g. Should I redeem my small cap SIP? Am I over-diversified?"
               rows={2}
-              style={{
-                flex: 1, 
-                backgroundColor: "var(--color-bg-input)", 
-                border: "1px solid var(--color-border)",
-                borderRadius: 8, 
-                padding: "16px 20px", 
-                color: "var(--color-text-main)",
-                fontSize: 15, 
-                resize: "none", 
-                outline: "none",
-                fontFamily: "var(--font-body)", 
-                lineHeight: 1.5,
-                transition: "border-color 0.2s"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  runAnalysis();
+                }
               }}
-              onFocus={(e) => e.target.style.borderColor = "var(--color-border-active)"}
-              onBlur={(e) => e.target.style.borderColor = "var(--color-border)"}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runAnalysis(); } }}
             />
             <button
               className="rs-btn-primary"
               onClick={runAnalysis}
               disabled={isRunning || !question.trim()}
-              style={{ minWidth: 140, fontSize: 16 }}
             >
-              {isRunning ? "Analyzing..." : "Analyze →"}
+              {isRunning ? "Analyzing…" : "Analyze →"}
             </button>
           </div>
 
           {/* Sample questions */}
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 16 }}>
+          <div className="suggestions-row">
             {SAMPLE_QUESTIONS.map((q, i) => (
               <button
                 key={i}
                 className="rs-btn-outline"
                 onClick={() => setQuestion(q)}
-                style={{ fontSize: 12 }}
               >
-                {q.length > 65 ? q.slice(0, 62) + "..." : q}
+                {q.length > 65 ? q.slice(0, 62) + "…" : q}
               </button>
             ))}
           </div>
         </div>
 
         {error && (
-          <div className="rs-card" style={{ borderLeft: "4px solid #ef4444", padding: "16px 20px", marginBottom: 32, color: "#fca5a5" }}>
-            ⚠️ {error}
-          </div>
+          <div className="error-banner">⚠️ {error}</div>
         )}
 
         {/* Pipeline Progress */}
@@ -210,12 +183,12 @@ export default function App() {
             <div className="rs-tabs">
               {[
                 { id: "committee", label: "Committee Opinions" },
-                { id: "verdict", label: "Final Verdict" },
-                { id: "portfolio", label: "Portfolio Analysis" },
+                { id: "verdict",   label: "Final Verdict"      },
+                { id: "portfolio", label: "Portfolio Analysis"  },
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  className={`rs-tab ${activeTab === tab.id ? 'active' : ''}`}
+                  className={`rs-tab${activeTab === tab.id ? " active" : ""}`}
                   onClick={() => setActiveTab(tab.id)}
                 >
                   {tab.label}
@@ -223,22 +196,21 @@ export default function App() {
               ))}
             </div>
 
-            <div style={{ marginTop: 24 }}>
+            <div className="tab-content">
               {activeTab === "committee" && <CommitteeOpinions opinions={result.committee_opinions} />}
-              {activeTab === "verdict" && <FinalVerdict result={result} />}
+              {activeTab === "verdict"   && <FinalVerdict result={result} />}
               {activeTab === "portfolio" && <PortfolioSummary />}
             </div>
           </div>
         )}
 
+        {/* Empty State */}
         {!result && !isRunning && pipelineSteps.length === 0 && (
-          <div style={{ textAlign: "center", padding: "100px 0", color: "var(--color-text-muted)" }}>
-            <div style={{ fontSize: 56, marginBottom: 24, opacity: 0.8 }}>₹</div>
-            <div style={{ fontSize: 24, fontWeight: 700, fontFamily: "var(--font-heading)", marginBottom: 12, color: "var(--color-text-main)" }}>
-              Investment Committee Ready
-            </div>
-            <div style={{ fontSize: 16, fontFamily: "var(--font-body)", maxWidth: 500, margin: "0 auto" }}>
-              4 AI advisors will debate your question, analyze market data, and reach a consensus recommendation.
+          <div className="empty-state">
+            <div className="empty-state-icon">₹</div>
+            <div className="empty-state-heading">Your Committee. Your Freedom.</div>
+            <div className="empty-state-sub">
+              4 AI advisors will debate your question, analyze market data, and reach a consensus recommendation
             </div>
           </div>
         )}

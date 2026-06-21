@@ -37,7 +37,7 @@ QUESTION FROM INVESTOR:
 {question}
 
 TOOL DATA GATHERED:
-{json.dumps(tool_outputs, indent=2, default=str)}
+{json.dumps(tool_outputs, separators=(',', ':'), default=str)}
 
 Based on the above data, provide your expert opinion.
 """
@@ -313,7 +313,13 @@ Be decisive. The investor needs a clear answer, not a hedge."""
             for point in opinion.key_points:
                 opinions_summary += f"  - {point}\n"
 
-        context = self._build_context(question, tool_outputs, profile) + opinions_summary
+        # Consensus only needs the opinions — tool data already digested by specialists
+        investor_ctx = (
+            f"INVESTOR PROFILE: Age {profile.age}, Risk={profile.risk_profile}, "
+            f"Goals={', '.join(profile.goals)}, Horizon={profile.investment_horizon_years}y\n"
+            f"QUESTION: {question}\n"
+        )
+        context = investor_ctx + opinions_summary
 
         result = await self.llm.complete_json(self.SYSTEM_PROMPT, context, temperature=0.2, provider=provider)
 

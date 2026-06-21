@@ -1,12 +1,13 @@
 function ConfidenceDial({ score }) {
-  const pct = Math.round(score * 100);
-  const color = pct >= 75 ? "var(--color-accent-lime)" : pct >= 55 ? "#fbbf24" : "var(--color-accent-orange)";
+  const pct   = Math.round(score * 100);
+  // Always use lime green for the arc fill, per brand spec
+  const color = "#00ee67";
   const label = pct >= 75 ? "High Confidence" : pct >= 55 ? "Moderate Confidence" : "Low Confidence";
 
-  // SVG arc
-  const r = 54;
+  // SVG semicircle arc
+  const r            = 54;
   const circumference = Math.PI * r;
-  const offset = circumference * (1 - pct / 100);
+  const offset       = circumference * (1 - pct / 100);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
@@ -14,19 +15,34 @@ function ConfidenceDial({ score }) {
         {/* Track */}
         <path
           d="M 14 70 A 56 56 0 0 1 126 70"
-          fill="none" stroke="var(--color-bg-input)" strokeWidth={10} strokeLinecap="round"
+          fill="none"
+          stroke="var(--color-bg-input)"
+          strokeWidth={10}
+          strokeLinecap="round"
         />
-        {/* Progress */}
+        {/* Progress arc — lime green */}
         <path
           d="M 14 70 A 56 56 0 0 1 126 70"
-          fill="none" stroke={color} strokeWidth={10} strokeLinecap="round"
+          fill="none"
+          stroke={color}
+          strokeWidth={10}
+          strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           style={{ transition: "stroke-dashoffset 1.5s ease" }}
         />
-        <text x="70" y="65" textAnchor="middle" fill={color} fontSize={24} fontWeight={700} fontFamily="var(--font-heading)">{pct}%</text>
+        <text
+          x="70" y="65"
+          textAnchor="middle"
+          fill={color}
+          fontSize={24}
+          fontWeight={700}
+          fontFamily="var(--font-heading)"
+        >
+          {pct}%
+        </text>
       </svg>
-      <span style={{ fontSize: 13, color, fontWeight: 700, fontFamily: "var(--font-heading)" }}>{label}</span>
+      <span className="confidence-dial-sublabel" style={{ color }}>{label}</span>
     </div>
   );
 }
@@ -35,47 +51,30 @@ export default function FinalVerdict({ result }) {
   if (!result) return null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* Top row: confidence + recommendation */}
-      <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 20 }}>
-        {/* Confidence */}
-        <div className="rs-card">
-          <div className="rs-card-body" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, height: "100%", justifyContent: "center" }}>
-            <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 700, letterSpacing: "0.05em", fontFamily: "var(--font-heading)" }}>CONFIDENCE</div>
-            <ConfidenceDial score={result.confidence_score} />
-          </div>
+    <div className="verdict-layout">
+      {/* Top row: confidence dial + final recommendation */}
+      <div className="verdict-top-row">
+        <div className="verdict-confidence-card">
+          <div className="confidence-dial-label">Confidence</div>
+          <ConfidenceDial score={result.confidence_score} />
         </div>
 
-        {/* Final recommendation */}
-        <div className="rs-card" style={{ borderLeft: "6px solid var(--color-accent-lime)" }}>
-          <div className="rs-card-body">
-            <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 700, letterSpacing: "0.05em", marginBottom: 16, fontFamily: "var(--font-heading)" }}>
-              FINAL RECOMMENDATION
-            </div>
-            <p style={{ fontSize: 16, lineHeight: 1.7, color: "var(--color-text-main)", margin: 0, fontWeight: 400 }}>
-              {result.final_recommendation}
-            </p>
-          </div>
+        <div className="verdict-rec-card">
+          <div className="section-micro-label" style={{ marginBottom: 16 }}>Final Recommendation</div>
+          <p className="verdict-rec-text">{result.final_recommendation}</p>
         </div>
       </div>
 
-      {/* Action items */}
+      {/* Action Items */}
       {result.action_items?.length > 0 && (
         <div className="rs-card">
           <div className="rs-card-body">
-            <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 700, letterSpacing: "0.05em", marginBottom: 16, fontFamily: "var(--font-heading)" }}>
-              ACTION ITEMS
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className="section-micro-label" style={{ marginBottom: 16 }}>Action Items</div>
+            <div className="action-items-list">
               {result.action_items.map((item, i) => (
-                <div key={i} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-                  <div style={{
-                    minWidth: 28, height: 28, borderRadius: "50%", backgroundColor: "var(--color-primary-light)",
-                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#fff", fontWeight: 700
-                  }}>
-                    {i + 1}
-                  </div>
-                  <span style={{ fontSize: 14, color: "var(--color-text-main)", lineHeight: 1.6, marginTop: 2 }}>{item}</span>
+                <div key={i} className="action-item-row">
+                  <div className="action-item-num">{i + 1}</div>
+                  <span className="action-item-text">{item}</span>
                 </div>
               ))}
             </div>
@@ -84,71 +83,49 @@ export default function FinalVerdict({ result }) {
       )}
 
       {/* Agreements & Disagreements */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div className="rs-card" style={{ borderTop: "4px solid var(--color-accent-lime)" }}>
-          <div className="rs-card-body">
-            <div style={{ fontSize: 12, color: "var(--color-accent-lime)", fontWeight: 700, letterSpacing: "0.05em", marginBottom: 16, fontFamily: "var(--font-heading)" }}>
-              ✓ COMMITTEE AGREEMENTS
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {result.agreements?.map((a, i) => (
-                <div key={i} style={{ fontSize: 13, color: "var(--color-text-main)", lineHeight: 1.6, paddingLeft: 16, borderLeft: "3px solid var(--color-accent-lime-muted)" }}>
-                  {a}
-                </div>
-              ))}
-            </div>
+      <div className="verdict-split-grid">
+        <div className="agreements-card">
+          <div className="agreements-label">✓ Committee Agreements</div>
+          <div>
+            {result.agreements?.map((a, i) => (
+              <div key={i} className="verdict-point-item agreement">{a}</div>
+            ))}
           </div>
         </div>
 
-        <div className="rs-card" style={{ borderTop: "4px solid var(--color-accent-orange)" }}>
-          <div className="rs-card-body">
-            <div style={{ fontSize: 12, color: "var(--color-accent-orange)", fontWeight: 700, letterSpacing: "0.05em", marginBottom: 16, fontFamily: "var(--font-heading)" }}>
-              ✗ COMMITTEE DISAGREEMENTS
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {result.disagreements?.map((d, i) => (
-                <div key={i} style={{ fontSize: 13, color: "var(--color-text-main)", lineHeight: 1.6, paddingLeft: 16, borderLeft: "3px solid rgba(251, 146, 60, 0.2)" }}>
-                  {d}
-                </div>
-              ))}
-            </div>
+        <div className="disagreements-card">
+          <div className="disagreements-label">✗ Committee Disagreements</div>
+          <div>
+            {result.disagreements?.map((d, i) => (
+              <div key={i} className="verdict-point-item disagreement">{d}</div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Risk warnings */}
+      {/* Risk Warnings */}
       {result.risk_warnings?.length > 0 && (
-        <div className="rs-card" style={{ borderLeft: "4px solid #ef4444" }}>
-          <div className="rs-card-body">
-            <div style={{ fontSize: 12, color: "#ef4444", fontWeight: 700, letterSpacing: "0.05em", marginBottom: 16, fontFamily: "var(--font-heading)" }}>
-              ⚠ RISK WARNINGS
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {result.risk_warnings.map((w, i) => (
-                <div key={i} style={{ fontSize: 13, color: "#fca5a5", lineHeight: 1.6, display: "flex", gap: 12 }}>
-                  <span style={{ color: "#ef4444" }}>•</span><span>{w}</span>
-                </div>
-              ))}
-            </div>
+        <div className="risk-warnings-card">
+          <div className="risk-warnings-label">⚠ Risk Warnings</div>
+          <div>
+            {result.risk_warnings.map((w, i) => (
+              <div key={i} className="risk-warning-row">
+                <span className="risk-bullet">•</span>
+                <span>{w}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Evidence */}
+      {/* Evidence Base */}
       {result.evidence?.length > 0 && (
         <div className="rs-card">
           <div className="rs-card-body">
-            <div style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 700, letterSpacing: "0.05em", marginBottom: 16, fontFamily: "var(--font-heading)" }}>
-              EVIDENCE BASE
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            <div className="section-micro-label" style={{ marginBottom: 16 }}>Evidence Base</div>
+            <div className="evidence-base-tags">
               {result.evidence.map((e, i) => (
-                <span key={i} style={{
-                  fontSize: 12, padding: "6px 14px", borderRadius: 8,
-                  backgroundColor: "var(--color-bg-input)", color: "var(--color-text-muted)", border: "1px solid var(--color-border)"
-                }}>
-                  {e}
-                </span>
+                <span key={i} className="evidence-base-tag">{e}</span>
               ))}
             </div>
           </div>
