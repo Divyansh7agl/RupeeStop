@@ -4,12 +4,15 @@ Planner Agent: Orchestrates the full investment committee pipeline.
 - Runs specialist agents in parallel
 - Feeds Devil's Advocate the other opinions
 - Hands everything to Consensus Agent
+
+Accepts an optional asyncio.Queue (event_queue) to push real-time step
+events to the SSE streaming endpoint as each stage actually completes.
 """
 
 import asyncio
 import time
 import structlog
-from typing import Dict, Any, List, Tuple, AsyncGenerator
+from typing import Dict, Any, List, Tuple, Optional
 
 from models.schemas import (
     InvestorProfile, FinalRecommendation, AdvisorOpinion,
@@ -33,7 +36,7 @@ logger = structlog.get_logger(__name__)
 class PlannerAgent:
     """
     Orchestrates the full multi-agent pipeline.
-    Yields PipelineLog events for real-time streaming to the frontend.
+    Pushes PipelineLog events into event_queue for real-time SSE streaming.
     """
 
     def __init__(self, llm: LLMClient):
@@ -72,36 +75,48 @@ class PlannerAgent:
 
     async def run(
         self,
-        request: QueryRequest
+        request: QueryRequest,
+        event_queue: Optional[asyncio.Queue] = None,
     ) -> Tuple[FinalRecommendation, List[PipelineLog]]:
         """
         Full pipeline. Returns final recommendation + full logs.
+
+        If event_queue is provided, each step update is pushed into it
+        immediately so the SSE generator can forward it to the client
+        without waiting for the entire pipeline to finish.
         """
         logs: List[PipelineLog] = []
         pipeline_start = time.time()
 
-        def log(step: str, status: str, details: str = None):
+        async def log(step: str, status: str, details: str = None):
             entry = PipelineLog(step=step, status=status, details=details)
             logs.append(entry)
             logger.info(f"pipeline.{step}", status=status, details=details)
+            if event_queue is not None:
+                await event_queue.put({
+                    "type": "step_update",
+                    "step": step,
+                    "status": status,
+                    "message": details or ""
+                })
             return entry
 
         # ── Step 1: Load investor profile ──
-        log("load_profile", "running", "Loading investor profile and portfolio")
+        await log("load_profile", "running", "Loading investor profile and portfolio")
         if request.use_sample_data or request.investor_profile is None:
             from data.portfolio import SAMPLE_PORTFOLIO
             profile = InvestorProfile(**SAMPLE_PORTFOLIO)
         else:
             profile = request.investor_profile
-        log("load_profile", "completed", f"Loaded {len(profile.portfolio)} funds for {profile.age}yo investor")
+        await log("load_profile", "completed", f"Loaded {len(profile.portfolio)} funds for {profile.age}yo investor")
 
         # ── Step 2: Planner decides tools ──
-        log("planner", "running", "Analyzing question to determine required tools")
+        await log("planner", "running", "Analyzing question to determine required tools")
         tools_needed = self._determine_tools_needed(request.question)
-        log("planner", "completed", f"Tools selected: {', '.join(tools_needed)}")
+        await log("planner", "completed", f"Tools selected: {', '.join(tools_needed)}")
 
         # ── Step 3: Run tools ──
-        log("tool_execution", "running", f"Gathering evidence from {len(tools_needed)} tools")
+        await log("tool_execution", "running", f"Gathering evidence from {len(tools_needed)} tools")
         tool_outputs: Dict[str, Any] = {}
 
         if "portfolio_analyzer" in tools_needed:
@@ -122,10 +137,10 @@ class PlannerAgent:
             market_ctx = await market_context_tool(market_query, self.llm, request.provider)
             tool_outputs["market_context"] = market_ctx.model_dump()
 
-        log("tool_execution", "completed", f"Evidence gathered: {list(tool_outputs.keys())}")
+        await log("tool_execution", "completed", f"Evidence gathered: {list(tool_outputs.keys())}")
 
         # ── Step 4: Parallel specialist analysis ──
-        log("specialists_parallel", "running", "Conservative, Growth, Cost advisors analyzing in parallel")
+        await log("specialists_parallel", "running", "Conservative, Growth, Cost advisors analyzing in parallel")
         specialist_start = time.time()
 
         conservative_task = self.conservative.analyze(request.question, tool_outputs, profile, provider=request.provider)
@@ -137,10 +152,10 @@ class PlannerAgent:
         )
 
         specialist_duration = round((time.time() - specialist_start) * 1000, 2)
-        log("specialists_parallel", "completed", f"3 advisors responded in {specialist_duration}ms")
+        await log("specialists_parallel", "completed", f"3 advisors responded in {specialist_duration}ms")
 
         # ── Step 5: Devil's Advocate (sees other opinions) ──
-        log("devils_advocate", "running", "Devil's Advocate challenging specialist opinions")
+        await log("devils_advocate", "running", "Devil's Advocate challenging specialist opinions")
         da_start = time.time()
 
         devils_opinion = await self.devils_advocate.analyze(
@@ -155,10 +170,10 @@ class PlannerAgent:
             provider=request.provider
         )
 
-        log("devils_advocate", "completed", f"Challenges raised in {round((time.time()-da_start)*1000, 2)}ms")
+        await log("devils_advocate", "completed", f"Challenges raised in {round((time.time()-da_start)*1000, 2)}ms")
 
         # ── Step 6: Consensus ──
-        log("consensus", "running", "Synthesizing all opinions into final recommendation")
+        await log("consensus", "running", "Synthesizing all opinions into final recommendation")
         consensus_start = time.time()
 
         all_opinions = {
@@ -172,11 +187,11 @@ class PlannerAgent:
             request.question, tool_outputs, profile, all_opinions, provider=request.provider
         )
 
-        log("consensus", "completed", f"Consensus reached in {round((time.time()-consensus_start)*1000, 2)}ms")
+        await log("consensus", "completed", f"Consensus reached in {round((time.time()-consensus_start)*1000, 2)}ms")
 
         # ── Step 7: Assemble final output ──
         total_duration = round((time.time() - pipeline_start) * 1000, 2)
-        log("pipeline_complete", "completed", f"Full pipeline completed in {total_duration}ms")
+        await log("pipeline_complete", "completed", f"Full pipeline completed in {total_duration}ms")
 
         final = FinalRecommendation(
             committee_opinions={

@@ -14,7 +14,6 @@ import json
 import time
 import asyncio
 import os
-import sys
 from contextlib import asynccontextmanager
 
 import structlog
@@ -62,7 +61,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Investment Committee Agent",
-    description="Multi-agent AI system simulating an investment committee with Conservative, Growth, Cost Efficiency, and Devil's Advocate advisors.",
+    description="Multi-agent AI system simulating an investment committee.",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -120,75 +119,83 @@ async def analyze(request: QueryRequest):
 @app.post("/analyze/stream")
 async def analyze_stream(request: QueryRequest):
     """
-    SSE streaming endpoint. Yields pipeline step updates in real-time,
-    then the final result as the last event.
+    SSE streaming endpoint.
+
+    Uses an asyncio.Queue so each pipeline step is emitted the moment it
+    completes — no more fake pre-emission followed by a long silence.
+    Keepalive SSE comments (': ping') are sent every 15 s so that Render /
+    Vercel proxies don't kill the connection during long LLM calls.
     """
     if not planner:
         raise HTTPException(status_code=503, detail="Service not ready.")
 
-    async def event_generator():
-        logger.info("api.stream.start", question=request.question[:100])
+    # Sentinel object that signals the generator to stop
+    _DONE = object()
+    queue: asyncio.Queue = asyncio.Queue()
 
-        # We run the pipeline and yield step events
-        steps_done = []
-        pipeline_steps = [
-            ("load_profile", "Loading investor profile..."),
-            ("planner", "Planner analyzing question..."),
-            ("tool_execution", "Running financial tools..."),
-            ("specialists_parallel", "Conservative, Growth & Cost advisors working in parallel..."),
-            ("devils_advocate", "Devil's Advocate challenging the committee..."),
-            ("consensus", "Consensus Agent synthesizing final recommendation..."),
-            ("pipeline_complete", "Complete!")
-        ]
-
-        # Emit each step as it starts
-        for step_id, step_msg in pipeline_steps:
-            event = {
-                "type": "step_update",
-                "step": step_id,
-                "status": "running",
-                "message": step_msg
-            }
-            yield f"data: {json.dumps(event)}\n\n"
-            await asyncio.sleep(0.1)  # allow event to flush
-
-        # Run the actual pipeline
+    async def run_pipeline():
+        """Run the full pipeline; push events into the queue as they happen."""
         try:
-            result, logs = await planner.run(request)
+            result, logs = await planner.run(request, event_queue=queue)
 
-            # Emit completed steps from logs
+            # Flush any remaining log entries that weren't pushed mid-pipeline
             for log in logs:
-                event = {
+                await queue.put({
                     "type": "step_update",
                     "step": log.step,
                     "status": log.status,
                     "message": log.details or ""
-                }
-                yield f"data: {json.dumps(event)}\n\n"
+                })
 
-            # Final result event
-            final_event = {
+            # Emit the final result
+            await queue.put({
                 "type": "final_result",
                 "data": result.model_dump()
-            }
-            yield f"data: {json.dumps(final_event)}\n\n"
+            })
 
         except Exception as e:
-            error_event = {
-                "type": "error",
-                "message": str(e)
-            }
-            yield f"data: {json.dumps(error_event)}\n\n"
-            logger.error("api.stream.error", error=str(e))
+            logger.error("api.stream.pipeline_error", error=str(e))
+            await queue.put({"type": "error", "message": str(e)})
+        finally:
+            await queue.put(_DONE)
 
-        yield "data: {\"type\": \"done\"}\n\n"
+    async def event_generator():
+        logger.info("api.stream.start", question=request.question[:100])
+
+        # Launch the pipeline concurrently — events will flow through the queue
+        pipeline_task = asyncio.create_task(run_pipeline())
+
+        try:
+            while True:
+                try:
+                    # Wait up to 15 s; if nothing arrives send a keepalive ping
+                    item = await asyncio.wait_for(queue.get(), timeout=15.0)
+                except asyncio.TimeoutError:
+                    # SSE comment lines keep the TCP connection alive
+                    yield ": ping\n\n"
+                    continue
+
+                if item is _DONE:
+                    break
+
+                yield f"data: {json.dumps(item)}\n\n"
+
+        finally:
+            pipeline_task.cancel()
+            try:
+                await pipeline_task
+            except asyncio.CancelledError:
+                pass
+
+        yield 'data: {"type": "done"}\n\n'
 
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no"
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
         }
     )
 
