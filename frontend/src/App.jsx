@@ -46,48 +46,80 @@ export default function App() {
     setPipelineSteps(STEPS.map((s) => ({ ...s, status: "pending", details: "" })));
 
     try {
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      // 120-second hard timeout
+      const timeoutId = setTimeout(() => controller.abort(), 120_000);
+
       const res = await fetch(`${API_BASE}/analyze/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, use_sample_data: true, provider }),
+        signal: controller.signal,
       });
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status} ${res.statusText}`);
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      abortRef.current = reader;
+      let buffer = "";  // accumulates partial lines across chunks
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const text = decoder.decode(value);
-        const lines = text.split("\n").filter((l) => l.startsWith("data: "));
+        // Append new chunk to buffer and split on newlines
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+
+        // Keep the last (potentially incomplete) line in the buffer
+        buffer = lines.pop();
 
         for (const line of lines) {
-          try {
-            const event = JSON.parse(line.slice(6));
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
 
-            if (event.type === "step_update") {
-              setPipelineSteps((prev) =>
-                prev.map((s) =>
-                  s.id === event.step
-                    ? { ...s, status: event.status, details: event.message }
-                    : s
-                )
-              );
-            } else if (event.type === "provider_notice") {
-              setProviderNotice(event.message);
-            } else if (event.type === "final_result") {
-              setResult(event.data);
-              setActiveTab("committee");
-            } else if (event.type === "error") {
-              setError(event.message);
-            }
-          } catch { }
+          const jsonStr = trimmed.slice(5).trim();
+          if (!jsonStr || jsonStr === "") continue;
+
+          let event;
+          try {
+            event = JSON.parse(jsonStr);
+          } catch {
+            console.warn("SSE parse error, skipping line:", jsonStr.slice(0, 100));
+            continue;
+          }
+
+          if (event.type === "step_update") {
+            setPipelineSteps((prev) =>
+              prev.map((s) =>
+                s.id === event.step
+                  ? { ...s, status: event.status, details: event.message }
+                  : s
+              )
+            );
+          } else if (event.type === "provider_notice") {
+            setProviderNotice(event.message);
+          } else if (event.type === "final_result") {
+            setResult(event.data);
+            setActiveTab("committee");
+          } else if (event.type === "error") {
+            setError(event.message);
+          }
+          // "done" type — stream finished cleanly, loop will exit on next read()
         }
       }
+
+      clearTimeout(timeoutId);
     } catch (err) {
-      setError(err.message);
+      if (err.name === "AbortError") {
+        setError("Request timed out after 2 minutes. The LLM may be overloaded — please try again.");
+      } else {
+        setError(err.message);
+      }
     } finally {
       setIsRunning(false);
     }
@@ -169,18 +201,14 @@ export default function App() {
           </div>
         </div>
 
-        {error && (
-          <div className="error-banner">⚠️ {error}</div>
-        )}
-
         {/* ── Error ── */}
         {error && (
           <div className="rs-glass-card animate-slide-up" style={{ borderLeft: "4px solid var(--color-accent-red)", padding: "20px 24px", marginBottom: 40 }}>
             <div style={{ fontWeight: 600, marginBottom: 6, fontFamily: "var(--font-heading)", color: "#fca5a5", display: "flex", alignItems: "center", gap: 8 }}>
-              ⚠ Rate Limit Reached
+              ⚠ Analysis Failed
             </div>
             <div style={{ fontSize: 14, color: "var(--color-text-muted)", lineHeight: 1.6 }}>
-              Both Gemini and Groq API limits are currently exhausted. Please wait a few minutes and try again.
+              {error}
             </div>
           </div>
         )}
