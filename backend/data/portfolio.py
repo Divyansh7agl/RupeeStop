@@ -5,10 +5,10 @@ Realistic fund names, expense ratios, categories based on real Indian MF market.
 
 SAMPLE_PORTFOLIO = {
     "age": 22,
-    "risk_profile": "aggressive",
+    "risk_profile": "Aggressive",
     "monthly_income": 60000,
     "monthly_investment": 15000,
-    "goals": ["wealth_creation", "retirement"],
+    "goals": ["Wealth Creation", "Retirement"],
     "investment_horizon_years": 38,
     "portfolio": [
         {

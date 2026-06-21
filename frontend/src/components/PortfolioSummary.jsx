@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
 
+// Converts snake_case or lowercase to Title Case: "wealth_creation" → "Wealth Creation"
+const formatLabel = (str) =>
+  str.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
 const CATEGORY_COLORS = {
   "Large Cap":              "var(--color-primary-light)",
   "Flexi Cap":              "var(--color-accent-lime)",
@@ -53,10 +57,10 @@ export default function PortfolioSummary() {
         <div className="rs-card-body">
           <div className="investor-profile-grid">
             {[
-              { label: "Age",        value: `${portfolio.age} years` },
-              { label: "Risk Profile",value: portfolio.risk_profile },
-              { label: "Goals",      value: portfolio.goals.join(", ") },
-              { label: "Horizon",    value: `${portfolio.investment_horizon_years} years` },
+              { label: "Age",         value: `${portfolio.age} years` },
+              { label: "Risk Profile", value: formatLabel(portfolio.risk_profile) },
+              { label: "Goals",        value: portfolio.goals.map(formatLabel).join(", ") },
+              { label: "Horizon",      value: `${portfolio.investment_horizon_years} years` },
             ].map((item, i) => (
               <div key={i}>
                 <div className="investor-profile-item-label">{item.label}</div>

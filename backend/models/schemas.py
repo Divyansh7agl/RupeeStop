@@ -4,9 +4,9 @@ from enum import Enum
 
 
 class RiskProfile(str, Enum):
-    conservative = "conservative"
-    moderate = "moderate"
-    aggressive = "aggressive"
+    conservative = "Conservative"
+    moderate = "Moderate"
+    aggressive = "Aggressive"
 
 
 class FundHolding(BaseModel):
@@ -21,7 +21,7 @@ class FundHolding(BaseModel):
 
 class InvestorProfile(BaseModel):
     age: int
-    risk_profile: RiskProfile
+    risk_profile: str
     monthly_income: Optional[float] = None
     monthly_investment: Optional[float] = None
     goals: List[str]
