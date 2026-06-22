@@ -103,7 +103,7 @@ export default function App() {
           setProviderNotice(event.message);
         } else if (event.type === "final_result") {
           setResult(event.data);
-          setActiveTab("verdict");
+          setActiveTab("committee");
         } else if (event.type === "error") {
           setError(event.message);
         }
