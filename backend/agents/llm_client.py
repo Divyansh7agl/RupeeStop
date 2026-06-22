@@ -292,7 +292,7 @@ class LLMClient:
                 {"role": "user",   "content": user_prompt},
             ],
             temperature=temperature,
-            max_tokens=2048,
+            max_tokens=8192,
         )
         return response.choices[0].message.content.strip()
 
@@ -303,8 +303,47 @@ class LLMClient:
             lines   = cleaned.split("\n")
             cleaned = "\n".join(lines[1:-1]) if lines[-1].strip() == "```" else "\n".join(lines[1:])
         cleaned = cleaned.strip()
+
+        # Remove tricky control characters that often break JSON parsers
+        import re
+        cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', cleaned)
+
         try:
             return json.loads(cleaned, strict=False)
         except json.JSONDecodeError as e:
-            logger.error("llm.json_parse_failed", error=str(e), raw_preview=cleaned[:200])
-            raise ValueError(f"LLM returned invalid JSON: {e}\nRaw: {cleaned[:300]}")
+            # Attempt to fix truncated JSON
+            fixed = cleaned
+            
+            # If the string ends with a non-escaped quote, it might be unclosed
+            # Actually, just count quotes
+            if fixed.count('"') % 2 != 0:
+                fixed += '"'
+                
+            # Balance brackets and braces
+            opened = []
+            in_string = False
+            escape = False
+            for char in fixed:
+                if char == '"' and not escape:
+                    in_string = not in_string
+                elif not in_string:
+                    if char == '{': opened.append('{')
+                    elif char == '[': opened.append('[')
+                    elif char == '}': 
+                        if opened and opened[-1] == '{': opened.pop()
+                    elif char == ']': 
+                        if opened and opened[-1] == '[': opened.pop()
+                if char == '\\' and not escape:
+                    escape = True
+                else:
+                    escape = False
+            
+            for brace in reversed(opened):
+                if brace == '{': fixed += '}'
+                elif brace == '[': fixed += ']'
+                
+            try:
+                return json.loads(fixed, strict=False)
+            except json.JSONDecodeError:
+                logger.error("llm.json_parse_failed", error=str(e), raw_preview=cleaned[:200])
+                raise ValueError(f"LLM returned invalid JSON: {e}\nRaw: {cleaned[:300]}")
