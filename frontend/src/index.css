@@ -538,6 +538,40 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(90deg, var(--color-primary), var(--color-accent-lime));
 }
 
+/* ─── Analysis Quote ────────────────────────────────────────────────────────── */
+.analysis-quote-card {
+  margin-top: 18px;
+  padding: 18px 22px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 238, 103, 0.18);
+  background: linear-gradient(135deg, rgba(13, 43, 42, 0.96), rgba(8, 30, 29, 0.98));
+  box-shadow: var(--shadow-card);
+}
+
+.analysis-quote-label {
+  font-size: 10px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--color-accent-lime);
+  margin-bottom: 10px;
+}
+
+.analysis-quote-text {
+  font-family: var(--font-heading);
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--color-text-main);
+  letter-spacing: -0.2px;
+}
+
+.analysis-quote-foot {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
 /* ─── Committee Grid ─────────────────────────────────────────────────────────── */
 .committee-grid {
   display: grid;
@@ -1199,7 +1233,7 @@ h1, h2, h3, h4, h5, h6 {
   animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.stagger-1 { animation-delay: 0.05s; opacity: 0; }
-.stagger-2 { animation-delay: 0.1s;  opacity: 0; }
-.stagger-3 { animation-delay: 0.15s; opacity: 0; }
-.stagger-4 { animation-delay: 0.2s;  opacity: 0; }
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }

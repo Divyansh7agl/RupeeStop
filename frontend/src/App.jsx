@@ -1,8 +1,17 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import PipelineProgress from "./components/PipelineProgress";
 import CommitteeOpinions from "./components/CommitteeOpinions";
 import FinalVerdict from "./components/FinalVerdict";
 import PortfolioSummary from "./components/PortfolioSummary";
+
+const FINANCE_QUOTES = [
+  "In investing, what is comfortable is rarely profitable. - Robert Arnott",
+  "The stock market is a device for transferring money from the impatient to the patient. - Warren Buffett",
+  "Diversification is the only free lunch in finance. - Harry Markowitz",
+  "Compounding works best when time is allowed to do the heavy lifting.",
+  "Risk comes from not knowing what you own. - Warren Buffett",
+  "A sound portfolio is built on discipline, not headlines.",
+];
 
 const SAMPLE_QUESTIONS = [
   "Should I redeem my small cap SIP given current market volatility?",
@@ -23,7 +32,21 @@ export default function App() {
   const [providerNotice, setProviderNotice] = useState(null);
   const [activeTab, setActiveTab] = useState("committee");
   const [provider, setProvider] = useState("gemini");
+  const [quoteIndex, setQuoteIndex] = useState(0);
   const abortRef = useRef(null);
+
+  useEffect(() => {
+    if (!isRunning) {
+      setQuoteIndex(0);
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      setQuoteIndex((current) => (current + 1) % FINANCE_QUOTES.length);
+    }, 4000);
+
+    return () => clearInterval(intervalId);
+  }, [isRunning]);
 
   const runAnalysis = async () => {
     if (!question.trim()) return;
@@ -67,49 +90,59 @@ export default function App() {
       const decoder = new TextDecoder();
       let buffer = "";  // accumulates partial lines across chunks
 
+      const handleEvent = (event) => {
+        if (event.type === "step_update") {
+          setPipelineSteps((prev) =>
+            prev.map((s) =>
+              s.id === event.step
+                ? { ...s, status: event.status, details: event.message }
+                : s
+            )
+          );
+        } else if (event.type === "provider_notice") {
+          setProviderNotice(event.message);
+        } else if (event.type === "final_result") {
+          setResult(event.data);
+          setActiveTab("verdict");
+        } else if (event.type === "error") {
+          setError(event.message);
+        }
+      };
+
+      const parseSseLine = (line) => {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) return;
+
+        const jsonStr = trimmed.slice(5).trim();
+        if (!jsonStr) return;
+
+        try {
+          handleEvent(JSON.parse(jsonStr));
+        } catch {
+          console.warn("SSE parse error, skipping line:", jsonStr.slice(0, 100));
+        }
+      };
+
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
 
-        // Append new chunk to buffer and split on newlines
-        buffer += decoder.decode(value, { stream: true });
+        if (value) {
+          buffer += decoder.decode(value, { stream: !done });
+        }
+
         const lines = buffer.split("\n");
-
-        // Keep the last (potentially incomplete) line in the buffer
-        buffer = lines.pop();
+        buffer = done ? "" : lines.pop() ?? "";
 
         for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data:")) continue;
+          parseSseLine(line);
+        }
 
-          const jsonStr = trimmed.slice(5).trim();
-          if (!jsonStr || jsonStr === "") continue;
-
-          let event;
-          try {
-            event = JSON.parse(jsonStr);
-          } catch {
-            console.warn("SSE parse error, skipping line:", jsonStr.slice(0, 100));
-            continue;
+        if (done) {
+          // Flush any trailing event that arrived without a final newline
+          if (buffer.trim()) {
+            parseSseLine(buffer);
           }
-
-          if (event.type === "step_update") {
-            setPipelineSteps((prev) =>
-              prev.map((s) =>
-                s.id === event.step
-                  ? { ...s, status: event.status, details: event.message }
-                  : s
-              )
-            );
-          } else if (event.type === "provider_notice") {
-            setProviderNotice(event.message);
-          } else if (event.type === "final_result") {
-            setResult(event.data);
-            setActiveTab("committee");
-          } else if (event.type === "error") {
-            setError(event.message);
-          }
-          // "done" type — stream finished cleanly, loop will exit on next read()
+          break;
         }
       }
 
@@ -217,6 +250,14 @@ export default function App() {
         {pipelineSteps.length > 0 && (
           <div className="animate-slide-up" style={{ marginBottom: 60 }}>
             <PipelineProgress steps={pipelineSteps} isRunning={isRunning} />
+
+            {isRunning && (
+              <div className="analysis-quote-card">
+                <div className="analysis-quote-label">Market Note</div>
+                <div className="analysis-quote-text">{FINANCE_QUOTES[quoteIndex]}</div>
+                <div className="analysis-quote-foot">While the committee analyzes your portfolio, keep the long view.</div>
+              </div>
+            )}
           </div>
         )}
 
